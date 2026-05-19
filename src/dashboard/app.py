@@ -541,8 +541,8 @@ def fetch_data(query_string, tenant_id="Todos", sucursal="Todas", ano="Todos", p
     if tenant_id and tenant_id != "Todos":
         conditions.append(f"tenant_id = {tenant_id}")
         
-    # 2. Branch Filter (Keep all branches visible in the comparison pie chart)
-    if sucursal and sucursal != "Todas" and "Participación por Sucursal" not in query_name:
+    # 2. Branch Filter
+    if sucursal and sucursal != "Todas":
         conditions.append(f"sectional_id IN (SELECT sectional_id FROM dim_sectional WHERE name = '{sucursal}')")
         
     # 3. Year Filter (Keep all years visible in the YoY annual growth query)
