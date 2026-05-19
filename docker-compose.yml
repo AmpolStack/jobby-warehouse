@@ -9,7 +9,7 @@ services:
       MYSQL_DATABASE: user_database
     volumes:
       - user_database:/var/lib/mysql
-      - ./deploy/sources/mysql-user/user-init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./infra/sources/mysql-user/user-init.sql:/docker-entrypoint-initdb.d/init.sql
     command: [ "mysqld", "--server-id=1", "--log-bin=mysql-bin", "--binlog-format=ROW", "--binlog-row-image=FULL" ]
     networks:
       - app-net
@@ -24,7 +24,7 @@ services:
       MYSQL_DATABASE: product_database
     volumes:
       - product_database:/var/lib/mysql
-      - ./deploy/sources/mysql-product/products-init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./infra/sources/mysql-product/products-init.sql:/docker-entrypoint-initdb.d/init.sql
     command: [ "mysqld", "--server-id=2", "--log-bin=mysql-bin", "--binlog-format=ROW", "--binlog-row-image=FULL" ]
     networks:
       - app-net
@@ -47,7 +47,7 @@ services:
         exec /usr/local/bin/docker-entrypoint.sh mongod --replSet rs0 --bind_ip_all --keyFile /etc/mongodb.key
     volumes:
       - sales_database:/data/db
-      - ./deploy/sources/mongodb-sales/mongodb.key:/tmp/mongodb.key:ro
+      - ./infra/sources/mongodb-sales/mongodb.key:/tmp/mongodb.key:ro
     networks:
       - app-net
     healthcheck:
@@ -65,7 +65,7 @@ services:
       sales-database:
         condition: service_healthy
     volumes:
-      - ./deploy/sources/mongodb-sales/rs-init.js:/rs-init.js:ro
+      - ./infra/sources/mongodb-sales/rs-init.js:/rs-init.js:ro
     networks:
       - app-net
     command: >
@@ -107,7 +107,7 @@ services:
 
   debezium:
     build:
-      context: ./deploy/backbone/debezium/setup
+      context: ./infra/backbone/debezium/setup
       dockerfile: Dockerfile
     container_name: debezium-connect
     restart: always
@@ -124,8 +124,8 @@ services:
       STATUS_STORAGE_REPLICATION_FACTOR: 1
       KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
       VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
-      KEY_CONVERTER_SCHEMAS_ENABLE: "true"
-      VALUE_CONVERTER_SCHEMAS_ENABLE: "true"
+      KEY_CONVERTER_SCHEMAS_ENABLE: "false"
+      VALUE_CONVERTER_SCHEMAS_ENABLE: "false"
       CONNECT_REST_ADVERTISED_HOST_NAME: debezium
       CONNECT_PLUGIN_PATH: /kafka/connect
     healthcheck:
@@ -158,11 +158,11 @@ services:
       debezium:
         condition: service_healthy
     volumes:
-      - ./deploy/backbone/debezium/setup/register-connectors.sh:/register-connectors.sh:ro
-      - ./deploy/backbone/debezium/connectors/user-database-config.json:/connectors/user-database-config.json:ro
-      - ./deploy/backbone/debezium/connectors/product-database-config.json:/connectors/product-database-config.json:ro
-      - ./deploy/backbone/debezium/connectors/sales-database.json:/connectors/sales-database.json:ro
-      - ./deploy/backbone/debezium/connectors/s3-sink-config.json:/connectors/s3-sink-config.json:ro
+      - ./infra/backbone/debezium/setup/register-connectors.sh:/register-connectors.sh:ro
+      - ./infra/backbone/debezium/connectors/user-database-config.json:/connectors/user-database-config.json:ro
+      - ./infra/backbone/debezium/connectors/product-database-config.json:/connectors/product-database-config.json:ro
+      - ./infra/backbone/debezium/connectors/sales-database.json:/connectors/sales-database.json:ro
+      - ./infra/backbone/debezium/connectors/s3-sink-config.json:/connectors/s3-sink-config.json:ro
     networks:
       - app-net
     entrypoint: [ "sh", "/register-connectors.sh" ]
@@ -175,7 +175,7 @@ services:
     environment:
       DYNAMIC_CONFIG_ENABLED: 'true'
     volumes:
-      - ./deploy/backbone/kafbat-ui/dynamic_config.yml:/etc/kafkaui/dynamic_config.yaml
+      - ./infra/backbone/kafbat-ui/dynamic_config.yml:/etc/kafkaui/dynamic_config.yaml
     networks:
       - app-net
     depends_on:
@@ -184,7 +184,7 @@ services:
 
   rustfs:
     image: rustfs/rustfs:latest
-    container_name: sarustfs
+    container_name: data-lake
     ports:
       - "9000:9000" # S3 API
       - "9001:9001" # Consola web
@@ -192,6 +192,10 @@ services:
       RUSTFS_ACCESS_KEY: rustfsadmin
       RUSTFS_SECRET_KEY: rustfsadmin
       RUSTFS_CONSOLE_ENABLE: "true"
+      # RUSTFS_HTTP_READ_HEADER_TIMEOUT: 60s
+      # RUSTFS_HTTP_READ_TIMEOUT: 60s
+      # RUSTFS_HTTP_WRITE_TIMEOUT: 60s
+      # RUSTFS_HTTP_IDLE_TIMEOUT: 120s
     volumes:
       - rustfs_data:/data
     networks:
@@ -213,10 +217,36 @@ services:
       - app-net
     entrypoint: >
       sh -c "
-        mc alias set local http://sarustfs:9000 rustfsadmin rustfsadmin &&
+        mc alias set local http://data-lake:9000 rustfsadmin rustfsadmin &&
         mc mb --ignore-existing local/data-lake &&
         echo 'Bucket data-lake listo.'
       "
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.8
+    container_name: clickhouse
+    ports:
+      - "8123:8123"
+      - "9002:9000"
+      - "9440:9440"
+    environment:
+      CLICKHOUSE_DB: warehouse
+      CLICKHOUSE_USER: root
+      CLICKHOUSE_PASSWORD: root
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+      - ./infra/sources/clickhouse-warehouse/01_database.sql:/docker-entrypoint-initdb.d/01_database.sql
+      - ./infra/sources/clickhouse-warehouse/02_dimensions.sql:/docker-entrypoint-initdb.d/02_dimensions.sql
+      - ./infra/sources/clickhouse-warehouse/03_fact.sql:/docker-entrypoint-initdb.d/03_fact.sql
+    healthcheck:
+      test: [ "CMD-SHELL", "clickhouse-client --query 'SELECT 1' || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks:
+      - app-net
 
 volumes:
   user_database:
@@ -224,6 +254,7 @@ volumes:
   sales_database:
   kafka_data:
   rustfs_data:
+  clickhouse_data:
 
 networks:
   app-net:
