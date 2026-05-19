@@ -115,7 +115,7 @@ Esquema de tablas en estrella cargadas en milisegundos tras la ejecución del ET
 
 ### Dashboard Principal
 Vista gerencial con indicadores de KPI YoY (Year over Year) y ventas totales.
-![Vista del Dashboard](assets/dashboard.png)
+![Vista del Dashboard](assets/dash_option_1.png)
 
 ### Opciones Interactivas del Dashboard
 Filtros dinámicos inyectados vía sub-consultas (Tenant, Año, Categoría, Empleados, etc.).
@@ -137,7 +137,7 @@ Visualiza el flujo completo, desde la ingesta de datos hasta la navegación din�
 
 ### Demostración del Dashboard
 
-[![Ver Video del Dashboard](assets/dashboard.png)](assets/demo.mp4)
+[![Ver Video del Dashboard](assets/dash_option_1.png)](assets/demo.mp4)
 
 *(Nota: Haz clic en la imagen superior para abrir el reproductor de video en GitHub, o abre el archivo `assets/demo.mp4` directamente si estás en local).*
 
