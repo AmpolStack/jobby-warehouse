@@ -137,14 +137,18 @@ Visualiza el flujo completo, desde la ingesta de datos hasta la navegación din�
 
 ### Demostración del Dashboard
 
-[![Ver Video del Dashboard](assets/dash_option_1.png)](assets/demo.mp4)
+<video src="assets/demo.mp4" controls="controls" width="100%" poster="assets/dash_option_1.png">
+  Tu navegador no soporta el tag de video.
+</video>
 
-*(Nota: Haz clic en la imagen superior para abrir el reproductor de video en GitHub, o abre el archivo `assets/demo.mp4` directamente si estás en local).*
+*(Nota: Si estás visualizando este archivo fuera de GitHub, dirígete a `assets/demo.mp4` para reproducirlo).*
 
 ### Demostración de la CLI
 
-[![Ver Video de la CLI](assets/cli_ui.png)](assets/cli_demo.mp4)
+<video src="assets/cli_demo.mp4" controls="controls" width="100%" poster="assets/cli_ui.png">
+  Tu navegador no soporta el tag de video.
+</video>
 
-*(Nota: Haz clic en la imagen superior para abrir el reproductor de video en GitHub, o abre el archivo `assets/cli_demo.mp4` directamente si estás en local).*
+*(Nota: Si estás visualizando este archivo fuera de GitHub, dirígete a `assets/cli_demo.mp4` para reproducirlo).*
 
 <br/>
