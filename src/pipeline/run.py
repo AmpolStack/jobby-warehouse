@@ -40,8 +40,6 @@ def main():
             
         all_success = True
         for table_name, df in transformed_tables.items():
-            client.truncate(table_name)
-            
             success = insert_df(client, df, table_name)
             if not success:
                 all_success = False

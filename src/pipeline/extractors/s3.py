@@ -25,9 +25,7 @@ class S3Client:
         try:
             if self.fs.exists(path):
                 files.extend(self.fs.glob(f"{path}**/*.json"))
-            if self.fs.exists(archived_path):
-                files.extend(self.fs.glob(f"{archived_path}**/*.json"))
-            logger.info(f"Found {len(files)} total files for {topic}")
+            logger.info(f"Found {len(files)} new files for {topic}")
             return files
         except Exception as e:
             logger.error(f"Error accessing S3 for topic {topic}: {e}")
